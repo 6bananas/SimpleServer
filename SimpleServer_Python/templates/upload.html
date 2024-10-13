@@ -1,0 +1,18 @@
+<!--文件上传测试-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+</head>
+
+<body>
+<h3 style="text-align:center">文件上传</h3>
+
+<form action="http://127.0.0.1:5001/upload_file" method="POST" enctype="multipart/form-data" style="text-align:center">
+    <input type="hidden" name="max_size" value="10485760"/>
+    <input type="file" name="file"/>
+    <br/>
+    <input type="submit" name="submit" value="上传"/>
+</form>
+</body>
+</html>
