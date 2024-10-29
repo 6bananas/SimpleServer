@@ -1,19 +1,22 @@
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Double, DateTime
+from app import db
 
-base = declarative_base()
+class Machine(db.Model):
+    id = db.Column(db.Integer, primary_key=True, comment='饮水机ID')
+    location = db.Column(db.String(100), default=None, nullable=False, comment='位置')
+    tds = db.Column(db.Double, default=None, nullable=False, comment='水质')
+    state = db.Column(db.Integer, default=None, nullable=False, comment='状态')
 
-class machine(base):
-    __tablename__ = 'machine'
-    id = Column(Integer, primary_key=True, comment='饮水机ID')
-    location = Column(String(100), default=None, nullable=False, comment='位置')
-    tds = Column(Double, default=None, nullable=False, comment='水质')
-    state = Column(Integer, default=None, nullable=False, comment='状态')
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'location': self.location,
+            'tds': self.tds,
+            'state': self.state
+        }
 
-class drink(base):
-    __tablename__ = 'drink'
-    id = Column(Integer, primary_key=True, autoincrement=True, comment='记录编号')
-    cardnumber = Column(Integer, default=None, nullable=False, comment='校园卡号')
-    machineid = Column(Integer, default=None, nullable=False, comment='饮水机ID')
-    time = Column(DateTime, default=None, nullable=False, comment='饮水时间')
-    consumption = Column(Integer, default=None, nullable=False, comment='饮水量')
+class Drink(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='记录编号')
+    cardnumber = db.Column(db.Integer, default=None, nullable=False, comment='校园卡号')
+    machineid = db.Column(db.Integer, default=None, nullable=False, comment='饮水机ID')
+    time = db.Column(db.DateTime, default=None, nullable=False, comment='饮水时间')
+    consumption = db.Column(db.Integer, default=None, nullable=False, comment='饮水量')

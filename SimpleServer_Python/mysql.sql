@@ -1,6 +1,6 @@
-create database `dataserver`;
+create database `simpleserver`;
 
-use `dataserver`;
+use `simpleserver`;
 
 create table machine(
     id int comment '饮水机ID' primary key,
@@ -26,6 +26,6 @@ values
 insert into drink
 (cardnumber, machineid, time, consumption)
 values
-(2101, 1, '2024-07-07 09:27:03', 500),
-(2101, 1, '2024-07-07 09:30:10', 200);
+(2101, 2001, '2024-07-07 09:27:03', 500),
+(2101, 2001, '2024-07-07 09:30:10', 200);
 

@@ -1,8 +1,7 @@
-from flask import request, jsonify, send_file
+from flask import request, send_file
 from app import app
-from app.database import change_state, query_info, query_sum, query_stu_sum
+from app.crud import *
 from werkzeug.utils import secure_filename
-
 
 # 全局变量，用于实时传递前端->硬件的信息
 TH = {2001:'', 2002:''}
@@ -64,7 +63,6 @@ def change_state_method():
 #修改TH值
 @app.route('/change_th', methods=['POST'])
 def change_th_method():
-    #声明要修改的全局变量
     global TH, th_flag, th_id
     data = request.get_json()
     th_id = data.get('id')

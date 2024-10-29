@@ -3,7 +3,6 @@ import time
 import threading
 import json
 from datetime import datetime
-from app.database import query_state, add_drink
 from app.routes import *
 from app import sock
 
@@ -43,6 +42,61 @@ def th_state(client_socket):
                 # 给硬件处理时间
                 time.sleep(0.5)
 
+# TCP接收数据预处理
+def handle_raw_data(raw_data):
+    print("tcp data: ", end='')
+    print(raw_data)
+    decode_data = raw_data.decode('utf-8')
+    if decode_data[0] == '[':
+        decode_data = decode_data[0:len(decode_data) - 2] + ']'
+    if decode_data[0] == '{':
+        index = decode_data.find('}')
+        decode_data = decode_data[:index + 1]
+    data = json.loads(decode_data)
+    return data
+
+# 处理饮水记录
+def handle_drink_data(data):
+    print('receive drink data')
+    id = data['ID']
+    localtime = data['localTime']
+    cardnum = data['cardNum']
+    water = data['water']
+    result, state_code = add_drink(cardnum, id, localtime, water)
+    if state_code == 200:
+        print('add drink success')
+    else:
+        print(f'add drink failed: {result.data}')
+
+# 处理故障或警告
+def handle_ewn_data(data):
+    print('receive e/w/n')
+    id = data['ID']
+    state = data['state']
+    state_map = {"Error1": 3, "Warning1": 4, "Normal": 1}
+    result, state_code = change_state(id, state_map[state])
+    if state_code == 200:
+        global ewn, ewn_id, ewn_state
+        ewn = True
+        ewn_id = id
+        ewn_state = state_map[state]
+        print('handle e/w/n success')
+    else:
+        print(f'handle e/w/n failed: {result.data}')
+
+# 处理复位指令
+def handle_reset_data(client_socket, data):
+    id = data['ID']
+    status = data['state']
+    if status == 'reset':
+        print('receive reset command')
+        system_time = get_time()
+        client_socket.send(json.dumps({"ID": id, "clock": system_time}).encode('utf-8'))
+        result, state_code = change_state(id, 1)
+        if state_code == 200:
+            print('reset success')
+        else:
+            print(f'reset failed: {result.data}')
 
 # TCP连接处理函数
 def handle_client(client_socket):
@@ -54,76 +108,23 @@ def handle_client(client_socket):
                 try:
                     raw_data = client_socket.recv(1024)
                     if raw_data:
-                        print("tcp data: ", end='')
-                        print(raw_data)
-                        decode_data = raw_data.decode('utf-8')
-                        if decode_data[0] == '[':
-                            decode_data = decode_data[0:len(decode_data) - 2] + ']'
-                        if decode_data[0] == '{':
-                            index = decode_data.find('}')
-                            decode_data = decode_data[:index+1]
-                        data = json.loads(decode_data)
-                        # 饮水记录
+                        # 预处理
+                        data = handle_raw_data(raw_data)
+                        # 饮水记录列表
                         if isinstance(data, list):
                             print('receive drink data')
                             for d in data:
-                                id = d['ID']
-                                localtime = d['localTime']
-                                cardnum = d['cardNum']
-                                water = d['water']
-                                result, state_code = add_drink(cardnum, id, localtime, water)
-                                if state_code == 200:
-                                    print('add drink success')
-                                else:
-                                    print(f'add drink failed: {result.data}')
+                                handle_drink_data(d)
                         else:
+                            # 饮水记录
                             if 'ID' in data and 'localTime' in data and 'cardNum' in data and 'water' in data:
-                                print('receive drink data')
-                                id = data['ID']
-                                localtime = data['localTime']
-                                cardnum = data['cardNum']
-                                water = data['water']
-                                result, state_code = add_drink(cardnum, id, localtime, water)
-                                if state_code == 200:
-                                    print('add drink success')
-                                else:
-                                    print(f'add drink failed: {result.data}')
+                                handle_drink_data(data)
                             # 故障或警告
                             if 'ID' in data and 'localTime' in data and 'state' in data:
-                                print('receive e/w/n')
-                                id = data['ID']
-                                state = data['state']
-                                to_state = ''
-                                if state == 'Error1':
-                                    to_state = 3
-                                elif state == 'Warning1':
-                                    to_state = 4
-                                elif state == 'Normal':
-                                    to_state = 1
-                                result, state_code = change_state(id, to_state)
-                                if state_code == 200:
-                                    global ewn, ewn_id, ewn_state
-                                    ewn = True
-                                    ewn_id = id
-                                    ewn_state = to_state
-                                    print('handle e/w/n success')
-                                else:
-                                    print(f'handle e/w/n failed: {result.data}')
+                                handle_ewn_data(data)
                             # 复位
                             if 'ID' in data and 'state' in data:
-                                id = data['ID']
-                                status = data['state']
-                                if status == 'reset':
-                                    print('receive reset command')
-                                    system_time = get_time()
-                                    # state = get_state(id)
-                                    client_socket.send(json.dumps({"ID": id, "clock": system_time}).encode('utf-8'))
-                                    # client_socket.send(json.dumps({"ID":id,"systemState":state}).encode('utf-8'))
-                                    result, state_code = change_state(id, 1)
-                                    if state_code == 200:
-                                        print('reset success')
-                                    else:
-                                        print(f'reset failed: {result.data}')
+                                handle_reset_data(client_socket, data)
                 except Exception as e:
                     print(f'TCP handle error: {e}')
                     break

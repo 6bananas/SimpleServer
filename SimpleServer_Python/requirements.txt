@@ -1,0 +1,6 @@
+Flask
+Flask-Cors
+Flask-Sock
+Flask-SQLAlchemy
+SQLAlchemy
+Werkzeug

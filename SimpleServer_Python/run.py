@@ -1,9 +1,9 @@
-from app import app
-from app.server import start_tcp
 import threading
 import sys
 import inspect
 import signal
+from app import app
+from app.server import start_tcp
 
 # 优雅地关闭服务器
 def sigint_handler(signal, frame):
@@ -31,7 +31,7 @@ def cleanup(code=0):
 
 signal.signal(signal.SIGINT, sigint_handler)
 
-# main
+
 def main():
     try:
         # 启动TCP服务器
@@ -40,8 +40,7 @@ def main():
         tcp_thread.start()
         # 启动flask
         app.run(host='0.0.0.0', port=5001)
-    except KeyboardInterrupt:
-        # Ctrl+C终止时
+    except KeyboardInterrupt: # Ctrl+C终止时
         cleanup(0)
 
 if __name__ == '__main__':
